@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+  <script>
+    const chatForm = document.querySelector('#chat-form');
+    const chatWindow = document.querySelector('#chat-window');
+    const nicknameInput = document.querySelector('#nickname');
+    const messageInput = document.querySelector('#message');
+    
+    // Create a WebSocket connection to the chat server
+    const socket = new WebSocket(`ws://${HOST}:${PORT}`);
+    
+    // Send a message to the chat server with the user's nickname
+    function sendNickname(nickname) {
+      socket.send(JSON.stringify({
+        type: 'nickname',
+        nickname
+      }));
+    }
+    
+    // Send a message to the chat server with the user's message
+    function sendMessage(message) {
+      socket.send(JSON.stringify({
+        type: 'message',
+        message
+      }));
+    }
+    
+    // Handle messages received from the chat server
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case 'nickname':
+          // Handle response from the chat server indicating whether the nickname is available
+          if (data.success) {
+            // Nickname is available, display a message in the chat window welcoming the user
+            chatWindow.innerHTML += `<p>Welcome to the chat, ${data.nickname}!</p>`;
+          } else {
+            // Nickname is not available, display an error message
+            chatWindow.innerHTML += '<p>Error: that nickname is already in use. Please choose a different nickname.</p>';
+          }
+          break;
+        case 'message':
+          // Display the message in the chat window
+          chatWindow.innerHTML += `<p><strong>${data.nickname}:</strong> ${data.message}</p>`;
+          break;
+      }
+    };
+    
+    // Handle form submission to enter the user's nickname
+    chatForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      sendNickname(nicknameInput.value);
+    });
+    
+    // Handle form submission to send a message
+    chatForm.addEventListener
+    
+    </script>
+</head>
+
+<body>
+    <h1>Chat</h1>
+    <form id="chat-form">
+
+        <label for="message">Message:</label>
+        <input type="text" id="message" name="message" />
+
+        <button type="submit">Send</button>
+    </form>
+    <div id="chat-window"></div>
+</body>
+
+
+
+</html>
