@@ -14,16 +14,15 @@ class user:
     def __str__(self):
         return f"{self.nickname} ({self.address})"
 
-
-
 class ChatServer:
-    def __init__(self, host='localhost', port=5000):
+    def __init__(self, host, port):
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.host, self.port))
         self.server.listen()
         self.users = {}
+        self.start()
 
     def broadcast(self, message):
         for client in self.users:
@@ -36,7 +35,6 @@ class ChatServer:
 
     def kill(self, client):
         client.close()
-        # remove client from users
         nickname = self.users[client].nickname
         self.users.pop(client)
         self.broadcast(f'{nickname} left the chat!'.encode('utf-8'))
@@ -50,9 +48,6 @@ class ChatServer:
                 if message.startswith('/'):
                     """Handle commands here."""
                     if message == '/quit':
-                        self.kill(client)
-                        break
-                    elif message.startswith('/connect'):
                         self.kill(client)
                         break
                     elif message.startswith('/nick'):
@@ -74,10 +69,6 @@ class ChatServer:
             print(f'Connected with {str(address)}')
             client.send('NICK'.encode('utf-8'))
             nickname = client.recv(1024).decode('utf-8')
-            while nickname in [user.nickname for user in self.users.values()]:
-                client.send('ERROR: name already in use'.encode('utf-8'))
-                client.send('NICK'.encode('utf-8'))
-                nickname = client.recv(1024).decode('utf-8')
             self.users[client] = user(client, nickname, address)
             print(f'Nickname of client is {nickname}!')
             client.send('Connected to the server!'.encode('utf-8'))
@@ -98,6 +89,6 @@ port = int(input('Enter port: '))
 
 server = ChatServer(host, port)
 
-server.start()
+
 
 
