@@ -2,48 +2,13 @@ import threading
 import socket
 import random
 import time
+import pygame
+from player import player
 
-DELTA_TIME = 1/20
 
-class player:
-    def __init__(self, user, password):
-        self.x = 0
-        self.y = 0
-        self.health = 100
-        self.alive = True
-        self.max_velocity = 5
-        self.velocity_x = 0
-        self.velocity_y = 0
-        self.friction = 0.5
-        self.username = user
-        self.password = password
-        self.keys = ""
-        
-    def increase_velocity_x(self):
-        if self.velocity_x < self.max_velocity:
-            self.velocity_x += 1
-    
-    def decrease_velocity_x(self):
-        if self.velocity_x > -self.max_velocity:
-            self.velocity_x -= 1
+DELTA_TIME = 1/60
 
-    def increase_velocity_y(self):
-        if self.velocity_y < self.max_velocity:
-            self.velocity_y += 1
 
-    def decrease_velocity_y(self):
-        if self.velocity_y > -self.max_velocity:
-            self.velocity_y -= 1
-
-    def move(self):
-        self.x += self.velocity_x
-        self.y += self.velocity_y
-        self.velocity_x *= self.friction
-        self.velocity_y *= self.friction
-        if velocity_x <= 0.1:
-            self.velocity_x = 0
-        if velocity_y <= 0.1:
-            self.velocity_y = 0
         
 
 class user:
@@ -51,6 +16,7 @@ class user:
         self.socket = socket
         self.address = address
         self.player = player(username, password)
+        self.keys = ["0","0","0","0"]
 
 
     def __str__(self):
@@ -73,7 +39,7 @@ class ChatServer:
     def update(self):
         positions = ""
         for client in self.users:
-            positions = positions + f"\n {self.users[client].player.username},{self.users[client].player.x},{self.users[client].player.y}"
+            positions = positions + f"\n{self.users[client].player.username},{self.users[client].player.x},{self.users[client].player.y},{self.users[client].player.color}"
         for client in self.users:
             client.send(positions.encode('utf-8'))
 
@@ -86,15 +52,38 @@ class ChatServer:
         """Handles a single client connection. 
         Responsible for receiving messages from the client and broadcasting them to all other clients."""
         while True:
+            playerkeys = None
             try:
-                json_player_commands = client.recv(1024).decode('utf-8')
-                
+                playerinput = client.recv(1024).decode('utf-8').split(",")
+                # starts with KEYS
+                if playerinput[0] == "KEYS:":
+                    self.users[client].keys = playerinput[1:]
             except:
+                print(f"killed {self.users[client].player.username}")
                 self.kill(client)
                 break
+            
+            
 
     def update_thread(self):
         while True:
+            for client in self.users:
+                playerkeys = self.users[client].keys
+                if "DOWN" in playerkeys:
+                    self.users[client].player.increase_velocity_y()
+                if "UP" in playerkeys:
+                    self.users[client].player.decrease_velocity_y()
+                if "RIGHT" in playerkeys:
+                    self.users[client].player.increase_velocity_x()
+                if "LEFT" in playerkeys:
+                    self.users[client].player.decrease_velocity_x()
+                if "FAST" in playerkeys:
+                    self.users[client].player.max_velocity = 20
+                    self.users[client].player.velocity_increment = 4
+                else:
+                    self.users[client].player.max_velocity = 10
+                    self.users[client].player.velocity_increment = 2
+                self.users[client].player.move()
             self.update()
             time.sleep(DELTA_TIME)
 

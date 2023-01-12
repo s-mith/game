@@ -1,0 +1,20 @@
+todo:
+
+game objects class [x]
+    1. game object that stores general infomation about every game object that can be extended by all game objects [x]
+        1. position information [x]
+        2. str .definition [x]
+    
+
+world class []
+    1. world class is a collection of game objects []
+    2. user class no longer has an instance of the player class inside of it and instead uses a reference to the player stored inside the 
+    world class []
+
+update communication with client []
+    1. .use the infomation stored in the world class while sending infor to the server. []
+    2. make sure the client knows what each game object is .when it recieves it []
+
+update client to .use different position method []
+    1. make client put the player at the center of the screen and move everything around the player []
+        1. add small amount of smoothing to cam []
