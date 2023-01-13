@@ -60,5 +60,5 @@ class player(gameobject):
             self.velocity_increment = 2
 
     def __str__(self):
-        return "player:{self.id}"
+        return "player:{self.username}"
 
