@@ -3,7 +3,11 @@ import socket
 import random
 import time
 import pygame
-from player import player
+
+import sys
+sys.path.insert(0, 'game_objects')
+from World import world
+
 
 
 DELTA_TIME = 1/60
@@ -12,12 +16,10 @@ DELTA_TIME = 1/60
         
 
 class user:
-    def __init__(self, socket, username, password, address):
+    def __init__(self, socket, address):
         self.socket = socket
         self.address = address
-        self.player = player(username, password)
-        self.keys = ["0","0","0","0"]
-
+        self.keys = []
 
     def __str__(self):
         return f"({self.address})"
@@ -25,79 +27,100 @@ class user:
 
 
 
-class ChatServer:
-    def __init__(self, saved_players):
-        self.host = input('Enter host: ')
-        self.port = int(input('Enter port: '))
+class Server:
+    def __init__(self):
+        self.host, self.port = input('Enter host and port: ').split(':')
+        self.port = int(self.port)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.host, self.port))
         self.server.listen()
         self.users = {}
-        self.saved_players = saved_players
+        self.world = world(0)
         self.start()
 
-    def update(self):
-        positions = ""
-        for client in self.users:
-            positions = positions + f"\n{self.users[client].player.username},{self.users[client].player.x},{self.users[client].player.y},{self.users[client].player.color}"
-        for client in self.users:
-            client.send(positions.encode('utf-8'))
 
-    def kill(self, client):
-        client.close()
-        self.users.pop(client)
+    def update(self):
+        """Sends the current state of the world to all clients."""
+        try:
+            for socket in self.users:
+                try:
+                    # get gameobjects within 2000 from player
+                    player = self.world.players[socket]
+                    gameobjects = self.world.gameobjects_near(player.x, player.y, 1100, 700)
+                    # subtract player x and y from gameobjects
+                    colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff", "#ffffff"]
+                    
+                    finalGameObjects = ""
+                    for gameobject in gameobjects:
+                        color_id = colors.index(gameobject.color)
+                        x = gameobject.x - player.x
+                        y = gameobject.y - player.y
+                        finalGameObjects += f"{x},{y},{gameobject.width},{gameobject.height},{color_id}\n"
+
+                    # remove player and append to the end
+                    
+                    # format x, y, w, h, c seperated by colons
+                    
+                    
+                    # make gameobjects into a string
+                    # remove last newline
+                    finalGameObjects = finalGameObjects[:-1]
+                    finalGameObjects += "///"
+                    # send to client
+                    
+                    finalGameObjectChunks = [finalGameObjects[i:i+2500] for i in range(0, len(finalGameObjects), 2500)]
+                    for chunk in finalGameObjectChunks:
+                        socket.send(chunk.encode('utf-8'))
+                    
+                except:
+                    pass
+        except:
+            pass
+
+    def kill(self, socket):
+        socket.close()
+        self.users.pop(socket)
+        self.world.players.pop(socket)
         
 
-    def handle(self, client):
-        """Handles a single client connection. 
-        Responsible for receiving messages from the client and broadcasting them to all other clients."""
+    def handle(self, socket):
+        """Handles a single socket connection. 
+        Responsible for receiving messages from the socket and broadcasting them to all other sockets."""
         while True:
             playerkeys = None
             try:
-                playerinput = client.recv(1024).decode('utf-8').split(",")
+                playerinput = socket.recv(1024).decode('utf-8').split(",")
                 # starts with KEYS
                 if playerinput[0] == "KEYS:":
-                    self.users[client].keys = playerinput[1:]
+                    self.users[socket].keys = playerinput[1:]
             except:
-                print(f"killed {self.users[client].player.username}")
-                self.kill(client)
+                print(f"killed {self.world.players[socket].username}")
+                self.kill(socket)
                 break
             
             
 
     def update_thread(self):
         while True:
-            for client in self.users:
-                playerkeys = self.users[client].keys
-                if "DOWN" in playerkeys:
-                    self.users[client].player.increase_velocity_y()
-                if "UP" in playerkeys:
-                    self.users[client].player.decrease_velocity_y()
-                if "RIGHT" in playerkeys:
-                    self.users[client].player.increase_velocity_x()
-                if "LEFT" in playerkeys:
-                    self.users[client].player.decrease_velocity_x()
-                if "FAST" in playerkeys:
-                    self.users[client].player.max_velocity = 20
-                    self.users[client].player.velocity_increment = 4
-                else:
-                    self.users[client].player.max_velocity = 10
-                    self.users[client].player.velocity_increment = 2
-                self.users[client].player.move()
+            for socket in self.users:
+                playerkeys = self.users[socket].keys
+                self.world.players[socket].commands(playerkeys)
+            self.world.moves()
             self.update()
             time.sleep(DELTA_TIME)
 
     def receive(self):
         while True:
-            client, address = self.server.accept()
-            client.send('LOGIN'.encode('utf-8'))
+            socket, address = self.server.accept()
+            socket.send('LOGIN'.encode('utf-8'))
 
-            username = client.recv(1024).decode('utf-8')
-            password = client.recv(1024).decode('utf-8')
+            username = socket.recv(1024).decode('utf-8')
+            password = socket.recv(1024).decode('utf-8')
 
-            self.users[client] = user(client, username, password, address)
-            print(username)
-            thread = threading.Thread(target=self.handle, args=(client,))
+            self.users[socket] = user(socket, address)
+            self.world.make_player(socket, 0, 0, 1, username, password)
+            print(f"{username} connected from {address}!")
+            thread = threading.Thread(target=self.handle, args=(socket,))
             thread.start()
 
     def start(self):
@@ -108,17 +131,6 @@ class ChatServer:
         update_thread.start()
         receive_thread.join()
 
-# get host and port from command line
 
 
-# open the file with the saved players
-with open('saved_players.txt', 'r') as file:
-    saved_players = file.readlines()
-
-
-
-server = ChatServer(saved_players)
-
-
-
-
+server = Server()

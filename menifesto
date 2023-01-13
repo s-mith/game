@@ -1,3 +1,7 @@
+URGENT BUG FIXES
+not valid color randomly while moving around (not really sure what is going on with that)
+
+
 todo:
 
 game objects class [x]
@@ -6,15 +10,17 @@ game objects class [x]
         2. str .definition [x]
     
 
-world class []
-    1. world class is a collection of game objects []
+world class [x]
+    1. world class is a collection of game objects [x]
     2. user class no longer has an instance of the player class inside of it and instead uses a reference to the player stored inside the 
-    world class []
+    world class [x]
 
-update communication with client []
-    1. .use the infomation stored in the world class while sending infor to the server. []
+update communication with client [x]
+    1. .use the infomation stored in the world class while sending infor to the server. [x]
     2. make sure the client knows what each game object is .when it recieves it []
 
-update client to .use different position method []
-    1. make client put the player at the center of the screen and move everything around the player []
+update client to .use different position method [x]
+    1. make client put the player at the center of the screen and move everything around the player [x]
         1. add small amount of smoothing to cam []
+
+

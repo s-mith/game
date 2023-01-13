@@ -1,27 +1,9 @@
-import random
+from GameObject import gameobject
 
-def magic_hex_color():
-    temp = [random.randint(123,255), random.randint(123,255), random.randint(123,255)]
-    deaden = random.randint(1,2)
-    if deaden == 1:
-        temp[random.randint(0,2)] = 0
-    if deaden == 2:
-        # choose a value that isn't already 0 and make it 0
-        list = []
-        for i in range(3):
-            if temp[i] != 0:
-                list.append(i)
-        temp[list[random.randint(0,len(list)-1)]] = 0
-    # cast temp to tuple
-    temp = tuple(temp)
-    return '#%02x%02x%02x' % temp
-
-
-class player:
-    def __init__(self, user, password):
-        self.x = 0
-        self.y = 0
-        self.color = magic_hex_color()
+class player(gameobject):
+    def __init__(self, x, y, id, user, password, color="#ffffff", width=50, height=50):
+        super().__init__(x, y, id)
+        self.color = color
         self.health = 100
         self.alive = True
         self.max_velocity = 10
@@ -32,8 +14,9 @@ class player:
         self.username = user
         self.password = password
         self.keys = ""
+        self.width = width
+        self.height = height
 
-        
     def increase_velocity_x(self):
         if self.velocity_x < self.max_velocity:
             self.velocity_x += self.velocity_increment
@@ -59,3 +42,23 @@ class player:
             self.velocity_x = 0
         if abs(self.velocity_y) <= 0.1:
             self.velocity_y = 0
+
+    def commands(self, commands):
+        if "DOWN" in commands:
+            self.increase_velocity_y()
+        if "UP" in commands:
+            self.decrease_velocity_y()
+        if "RIGHT" in commands:
+            self.increase_velocity_x()
+        if "LEFT" in commands:
+            self.decrease_velocity_x()
+        if "FAST" in commands:
+            self.max_velocity = 20
+            self.velocity_increment = 4
+        else:
+            self.max_velocity = 10
+            self.velocity_increment = 2
+
+    def __str__(self):
+        return "player:{self.id}"
+
