@@ -8,7 +8,8 @@ import sys
 sys.path.insert(0, 'game_objects')
 from World import world
 
-
+PORT = 3004
+HOST = 'localhost'
 
 DELTA_TIME = 1/60
 
@@ -29,8 +30,7 @@ class user:
 
 class Server:
     def __init__(self):
-        self.host, self.port = input('Enter host and port: ').split(':')
-        self.port = int(self.port)
+        self.host, self.port = HOST, PORT
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.host, self.port))
         self.server.listen()
