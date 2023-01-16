@@ -2,7 +2,6 @@ import threading
 import socket
 import random
 import time
-import pygame
 
 import sys
 sys.path.insert(0, 'game_objects')
