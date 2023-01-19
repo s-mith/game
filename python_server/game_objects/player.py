@@ -16,7 +16,7 @@ class player(gameobjectvolume):
         self.password = password
         self.keys = ""
         orientation = [0, 0]
-        self.reload_time = 0.1
+        self.reload_time = 0.2
         self.reload_timer = time.time()
         self.bullets = []
 

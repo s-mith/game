@@ -61,7 +61,8 @@ class Server:
                             color_id = colors.index(gameobject.color)
                             x = gameobject.x - player.x
                             y = gameobject.y - player.y
-                            finalGameObjects += f"{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id},{gameobject.health}\n"
+                            alive = int(gameobject.alive)
+                            finalGameObjects += f"{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id},{gameobject.health},{alive}\n"
                         elif info[0] == "bullet":
                             color_id = colors.index(gameobject.color)
                             x = gameobject.x - player.x
@@ -112,12 +113,15 @@ class Server:
                 playerinput = list(filter(lambda x: x != "", playerinput))
                 # starts with KEYS
                 # print(playerinput)
-                if playerinput[0] == "KEYS:":
-                    self.users[socket].keys = playerinput[1:]
-                    if "FIRE" in playerinput[1:]:
-                        self.world.players[socket].orientation = [float(playerinput[playerinput.index("FIRE")+1]),  float(playerinput[playerinput.index("FIRE")+2])]
-                elif playerinput[0] == "ORIENTATION:":
-                    self.world.players[socket].orientation = [float(playerinput[1]),  float(playerinput[2])]
+                if self.world.players[socket].alive:
+                    if playerinput[0] == "KEYS:":
+                        self.users[socket].keys = playerinput[1:]
+                        if "FIRE" in playerinput[1:]:
+                            self.world.players[socket].orientation = [float(playerinput[playerinput.index("FIRE")+1]),  float(playerinput[playerinput.index("FIRE")+2])]
+                    elif playerinput[0] == "ORIENTATION:":
+                        self.world.players[socket].orientation = [float(playerinput[1]),  float(playerinput[2])]
+
+                    
                     
             except:
                 print(f"killed {self.world.players[socket].username}")
@@ -132,12 +136,14 @@ class Server:
                 playerkeys = self.users[socket].keys
                 self.world.players[socket].commands(playerkeys)
                 if "FIRE" in playerkeys and self.world.players[socket].can_fire():
-                    self.world.create_bullet(self.world.players[socket].x+self.world.players[socket].width/2, self.world.players[socket].y+self.world.players[socket].height/2, 0, "#000000", self.world.players[socket].orientation, 10, 10,  socket)
+                    self.world.create_bullet(self.world.players[socket].x+self.world.players[socket].width/2, self.world.players[socket].y+self.world.players[socket].height/2, 0, "#000000", self.world.players[socket].orientation, 40, 10,  socket)
 
             
             self.world.check_bullets()
             
+            self.world.check_deaths()
 
+                
             self.world.moves()
             self.update()
             time.sleep(DELTA_TIME)

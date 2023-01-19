@@ -59,6 +59,11 @@ class world(gameobject):
                     target.health -= bullet.damage
                     self.remove_bullet(bullet)
             
+    def check_deaths(self):
+        for player in self.players.values():
+            if player.health <= 0:
+                player.alive = False
+        
         
 
     def moves(self):

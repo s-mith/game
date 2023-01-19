@@ -104,18 +104,35 @@ class GameClient:
                     h = int(gameobject[5])
                     color = gameobject[6]
                     health = gameobject[7]
-                    pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
-                    # draw name under the player
-                    font = pygame.font.SysFont('Comic Sans MS', 25)
-                    text = font.render(name, True, (0, 0, 0))
-                    textRect = text.get_rect()
-                    textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
-                    screen.blit(text, textRect)
-                    # draw health bar
-                    # draw a white rectangle above the player
-                    
-                    pygame.draw.rect(screen, pygame.Color(COLORS[6]), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25 ,((y+screen_height/2-25)+self.camera_ajustment[1]-13), w*1.5, 10))
-                    pygame.draw.rect(screen, pygame.Color("#ff0000"), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25,((y+screen_height/2-25)+self.camera_ajustment[1]-13), (w*(int(health)/100))*1.5, 10))
+                    alive = gameobject[8]
+                    # if alive == "0" everything should be transparent
+                    if alive == "1":
+                        pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
+                        # draw name under the player
+                        font = pygame.font.SysFont('Comic Sans MS', 25)
+                        text = font.render(name, True, (0, 0, 0))
+                        textRect = text.get_rect()
+                        textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
+                        screen.blit(text, textRect)
+                        # draw health bar
+                        # draw a white rectangle above the player
+                        
+                        pygame.draw.rect(screen, pygame.Color(COLORS[6]), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25 ,((y+screen_height/2-25)+self.camera_ajustment[1]-13), w*1.5, 10))
+                        pygame.draw.rect(screen, pygame.Color("#ff0000"), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25,((y+screen_height/2-25)+self.camera_ajustment[1]-13), (w*(int(health)/100))*1.5, 10))
+                    else:
+                        # make the player transparent
+                        
+                        # pygame.draw.rect(screen, pygame.Color((255,255,255)), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
+                        s = pygame.Surface((w, h), pygame.SRCALPHA)   
+                        s.fill((255,255,255,155))                
+                        screen.blit(s, ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1]))
+                        # draw name under the player
+                        font = pygame.font.SysFont('Comic Sans MS', 10)
+                        text = font.render(name+"[dead]", True, (0, 0, 0))
+                        text.set_alpha(155)
+                        textRect = text.get_rect()
+                        textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
+                        screen.blit(text, textRect)
 
 
                     # draw a red rectangle above the player
