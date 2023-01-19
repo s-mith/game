@@ -1,0 +1,47 @@
+REWORK communication BETWEEN SERVER AND client
+
+
+
+
+bullet class [x] 
+    1. bullet class is a game object that is a bullet [x]
+    2. bullet class has a direction and speed [x]
+    3. bullet class has a .move function that updates the bullet [x]
+
+player class [x]
+    1. player class is a game object that is a player [x]
+    4. player class has a .collide function that checks if the player has collided with anything and if it has it returns the object it collided with []
+
+game client main menu like minecraft []
+    1. make a main menu []
+        1. make a login screen []
+        5. create navigation on the main menu []
+        2. make a register screen []
+        3. make a server list screen []
+        4. make a server join window []
+        7. make a settings window []
+        8. make a help window []
+    
+
+client UI []
+    1. make a UI []
+        1. make a health bar []
+        2. make a ammo bar []
+        3. make a crosshair []
+        4. make a chat box []
+        5. make a inventory []
+        6. make a pause menu []
+        7. make a death screen []
+        8. make a win screen []
+        9. make a lose screen []
+    10. make a settings window []
+    11. make a help window []
+    12. show names under players []
+
+GameObjectVolume [x]
+    1. make a game object volume [x]
+    2. it has width and height! [x]
+
+    
+
+

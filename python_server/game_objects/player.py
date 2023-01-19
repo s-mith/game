@@ -1,8 +1,9 @@
-from GameObject import gameobject
+from GameObjectVolume import gameobjectvolume
+import time
 
-class player(gameobject):
+class player(gameobjectvolume):
     def __init__(self, x, y, id, user, password, color="#ffffff", width=50, height=50):
-        super().__init__(x, y, id)
+        super().__init__(x, y, id, width, height)
         self.color = color
         self.health = 100
         self.alive = True
@@ -14,8 +15,19 @@ class player(gameobject):
         self.username = user
         self.password = password
         self.keys = ""
-        self.width = width
-        self.height = height
+        orientation = [0, 0]
+        self.reload_time = 0.1
+        self.reload_timer = time.time()
+        self.bullets = []
+
+    def shoot(self, bullet):
+        self.bullets.append(bullet)
+        self.reload_timer = time.time()
+
+    def can_fire(self):
+        if self.reload_timer + self.reload_time > time.time():
+            return False
+        return True
 
     def increase_velocity_x(self):
         if self.velocity_x < self.max_velocity:
@@ -59,6 +71,20 @@ class player(gameobject):
             self.max_velocity = 10
             self.velocity_increment = 2
 
+    def damage(self, amount):
+        self.health -= amount
+        if self.health <= 0:
+            self.alive = False
+
+    def collisions(self, objects):
+        collided = []
+        for object in objects:
+            if object.id != self.id:
+                if self.x + self.width > object.x and self.x < object.x + object.width:
+                    if self.y + self.height > object.y and self.y < object.y + object.height:
+                        collided.append(object)
+        return collided
+
     def __str__(self):
-        return "player:{self.username}"
+        return f"player:{self.username}"
 
