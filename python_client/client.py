@@ -26,12 +26,13 @@ class GameClient:
         self.client = None
         self.user = input('username: ')
         self.password = input('password: ')
-        try:
-            self.host, self.port = input("server address: ").split(':')
-            self.port = int(self.port)
-        except ValueError:
-            print("Error: invalid server address")
-            return
+        self.host, self.port = "134.195.121.194", 3004
+        # try:
+        #     self.host, self.port = input("server address: ").split(':')
+        #     self.port = int(self.port)
+        # except ValueError:
+        #     print("Error: invalid server address")
+        #     return
         self.game_info = []
         self.killed = False
         self.new_game_info = ""
