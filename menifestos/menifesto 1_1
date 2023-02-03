@@ -1,7 +1,4 @@
-REWORK communication BETWEEN SERVER AND client
-
-
-
+REWORK communication BETWEEN SERVER AND client [x]
 
 bullet class [x] 
     1. bullet class is a game object that is a bullet [x]
@@ -25,17 +22,8 @@ game client main menu like minecraft []
 
 client UI []
     1. make a UI []
-        1. make a health bar []
-        2. make a ammo bar []
-        3. make a crosshair []
-        4. make a chat box []
-        6. make a escape menu []
-        7. make a death screen []
-        9. make a lose screen []
+        6. make a escape menu [x]
         10. score board []
-    10. make a settings window []
-    11. make a help window []
-    12. show names under players []
 
 GameObjectVolume [x]
     1. make a game object volume [x]

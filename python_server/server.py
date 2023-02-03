@@ -2,10 +2,6 @@ import threading
 import socket
 import random
 import time
-import pygame
-
-import sys
-sys.path.insert(0, 'game_objects')
 from World import world
 
 PORT = 3004
@@ -85,6 +81,7 @@ class Server:
                     finalGameObjects = finalGameObjects[:-1]
                     finalGameObjects += "///"
                     # send to client
+
                     
                     finalGameObjectChunks = [finalGameObjects[i:i+2500] for i in range(0, len(finalGameObjects), 2500)]
                     for chunk in finalGameObjectChunks:
@@ -120,6 +117,14 @@ class Server:
                             self.world.players[socket].orientation = [float(playerinput[playerinput.index("FIRE")+1]),  float(playerinput[playerinput.index("FIRE")+2])]
                     elif playerinput[0] == "ORIENTATION:":
                         self.world.players[socket].orientation = [float(playerinput[1]),  float(playerinput[2])]
+                    elif playerinput[0] == "ACTIONS:":
+                        if playerinput[1] == "respawn":
+                            # randomize spawn location
+                            
+                            world_width = self.world.tile_width/2 * self.world.tile_size
+                            world_height = self.world.tile_height/2 * self.world.tile_size
+                            self.world.players[socket].respawn(random.randint(-world_width, world_width), random.randint(-world_height, world_height))
+
 
                     
                     
@@ -140,6 +145,7 @@ class Server:
 
             
             self.world.check_bullets()
+            self.world.check_collisions()
             
             self.world.check_deaths()
 
@@ -157,7 +163,9 @@ class Server:
             password = socket.recv(1024).decode('utf-8')
 
             self.users[socket] = user(socket, address)
-            self.world.make_player(socket, 0, 0, socket, username, password)
+            world_width = self.world.tile_width/2 * self.world.tile_size
+            world_height = self.world.tile_height/2 * self.world.tile_size
+            self.world.make_player(socket, random.randint(-world_width, world_width), random.randint(-world_height, world_height), socket, username, password)
             print(f"{username} connected from {address}!")
             thread = threading.Thread(target=self.handle, args=(socket,))
             thread.start()

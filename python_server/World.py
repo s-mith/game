@@ -21,7 +21,18 @@ class world(gameobject):
             self.tile_map.append([])
             for j in range(self.tile_height):
                 self.tile_map[i].append(tile((i-int(self.tile_width/2))*self.tile_size, (j-int(self.tile_height/2))*self.tile_size, 0, choice(colors), self.tile_size, self.tile_size))
-        # make a flat version of the tile map on one line
+        # add is solid to the outer tiles
+        for i in range(len(self.tile_map[0])):
+            self.tile_map[0][i].is_solid = True
+            self.tile_map[-1][i].is_solid = True    
+        for i in range(len(self.tile_map)):
+            self.tile_map[i][0].is_solid = True
+            self.tile_map[i][-1].is_solid = True
+
+            
+
+        
+
     
     def flat_map(self):
         return [item for sublist in self.tile_map for item in sublist]
@@ -46,10 +57,6 @@ class world(gameobject):
     def remove_bullet(self, bullet):
         self.bullets.pop(self.bullets.index(bullet))
 
-    def check_hit(self, obj1, obj2):
-        if obj1.x < obj2.x + obj2.width and obj1.x + obj1.width > obj2.x and obj1.y < obj2.y + obj2.height and obj1.y + obj1.height > obj2.y:
-            return True
-        return False
 
     def check_bullets(self):
         for bullet in self.bullets:
@@ -58,6 +65,17 @@ class world(gameobject):
                 if bullet.owner != target.id:
                     target.health -= bullet.damage
                     self.remove_bullet(bullet)
+
+    def check_collisions(self):
+        for player in self.players.values():
+            collisions = player.collisions(self.flat_map())
+            
+            for collision in collisions:
+                if collision.is_solid:
+                    player.collide(collision)
+
+
+    
             
     def check_deaths(self):
         for player in self.players.values():

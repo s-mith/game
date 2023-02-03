@@ -12,8 +12,43 @@ LEFT = pygame.K_a
 RIGHT = pygame.K_d
 FAST = pygame.K_LSHIFT
 FIRE = pygame.K_SPACE
+MENU = pygame.K_q
 
 COLORS = ["#FFE5CC", "#E6E6FA", "#BDBDBD", "#F4F4F4", "#B3E5FC", "#B3E5FC", "#ffffff", "#000000"]
+
+class Button:
+    def __init__ (self, x, y, w, h, color, text, text_color, action, hover_color = None, hover_text_color = None):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.color = color
+        self.color_normal = color
+        self.text = text
+        self.text_color = text_color
+        self.action = action
+        self.hover_color = hover_color
+    
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.w, self.h))
+        font = pygame.font.SysFont('Comic Sans MS', 25)
+        text = font.render(self.text, True, self.text_color)
+        textRect = text.get_rect()
+        textRect.center = (self.x+self.w/2,self.y+self.h/2)
+        screen.blit(text, textRect)
+    
+    def click(self):
+        self.action()
+
+    def is_hovered(self, mousepos):
+        if mousepos[0] > self.x and mousepos[0] < self.x+self.w and mousepos[1] > self.y and mousepos[1] < self.y+self.h:
+            self.color = self.hover_color
+            return True
+        else:
+            self.color = self.color_normal
+            return False
+
+
 
 class GameClient:
     def __init__(self):
@@ -35,23 +70,26 @@ class GameClient:
         self.camera_move_speed = 0.25
         self.sendkeys = ""
         self.tile_size = 50
+        self.meun_open = False
+        self.do_respawn = False
+        self.meun_buttons = []
+                           
         self.connect()        
 
     def collect_data(self):
         while True:
+            
             # try:
             part = self.client.recv(2500).decode('utf-8')
             if part == "LOGIN":
                 return part
             if "///" in part:
-                end_of_return, start_of_new = part.split("///")
-                old_game_info, self.new_game_info = self.new_game_info, start_of_new
-                temp = "".join((old_game_info,end_of_return))
+                # split on first occurence of /// and return the first part
+                end_of_return, start_of_new = part.split("///", 1)
+                temp = self.new_game_info
+                self.new_game_info = start_of_new
                 
-                if "///" in "".join((old_game_info,end_of_return)):
-                    pass
-                else:
-                    return "".join((old_game_info,end_of_return))
+                return temp + end_of_return
             else:
                 temp = "".join((self.new_game_info, part))
                 self.new_game_info = temp
@@ -77,19 +115,40 @@ class GameClient:
                 except:
                     pass
 
+    def kill(self):
+        self.killed = True
+
+    def resume(self):
+            self.meun_open = False
+
+    def respawn(self):
+        self.do_respawn = True
+        self.meun_open = False
+    
     def ui(self):
         pygame.init()
         # screen = pygame.display.set_mode((640, 480))
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        screen_width, screen_height = pygame.display.get_surface().get_size()
+
+        
+        buttons = [
+                    {"color": (255, 255, 255), "text": "respawn", "text_color": (0, 0, 0), "action": self.respawn, "hover":(0,255,0)},
+                    {"color": (255, 255, 255), "text": "resume", "text_color": (0, 0, 0), "action": self.resume, "hover":(77,77,77)},
+                    {"color": (255, 255, 255), "text": "quit", "text_color": (0, 0, 0), "action": self.kill, "hover":(255,0,0)},
+                ]
+        for i,button in enumerate(buttons):
+            self.meun_buttons.append(Button(screen_width/2-100,screen_height/2-25+(i*80),200,50, button["color"], button["text"], button["text_color"], button["action"], button["hover"]))
+
         while True:
             
             # Process events
-            # screen.fill((0,0,0))
+            screen.fill((0,0,0))
             # for player in self.players draw a rectangle using the coodinates from the indexes 2 and 3
             screen_width, screen_height = pygame.display.get_surface().get_size()
             player_x = 0
             player_y = 0
-
+            
             for gameobject in self.game_info:
                 if gameobject[0] == "world":
                     self.tile_size = int(gameobject[2])
@@ -148,8 +207,17 @@ class GameClient:
                     y = float(gameobject[3])
                     color = gameobject[4]
                     pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], self.tile_size, self.tile_size))
-            
+            if self.meun_open:
+                    # make the buttons with 200 width and 50 height centered on the screen
+                    # get the mouse position
+                    for button in self.meun_buttons:
+                        button.is_hovered(pygame.mouse.get_pos())
+                        button.draw(screen) 
 
+            if self.do_respawn:
+                self.client.send(",ACTIONS:,respawn".encode('utf-8'))
+                self.do_respawn = False
+                
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -157,34 +225,48 @@ class GameClient:
                 elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP or event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
                     # print all the keys that are pressed
                     keys = pygame.key.get_pressed()
-                    # every key on the keyboard 
-                    keyboardcommands = [",KEYS:"]
-                    if keys[UP]:
-                        keyboardcommands.append("UP")
-                    if keys[DOWN]:
-                        keyboardcommands.append("DOWN")
-                    if keys[LEFT]:
-                        keyboardcommands.append("LEFT")
-                    if keys[RIGHT]:
-                        keyboardcommands.append("RIGHT")
-                    if keys[FAST]:
-                        keyboardcommands.append("FAST")
-                    if keys[FIRE]:
-                        keyboardcommands.append("FIRE")
-                        mousepos = pygame.mouse.get_pos()
-                        # figure out the direction of the mouse relative to the in the form of a space on a unit circle
-                        player_location = ((player_x+screen_width/2-25)+self.camera_ajustment[0]+25,(player_y+screen_height/2-25)+self.camera_ajustment[1]+25)
-                        mouse_direction = (mousepos[0]-player_location[0], mousepos[1]-player_location[1])
-                        if mouse_direction[0] == 0 and mouse_direction[1] == 0:
-                            mouse_direction = (0, 0)
-                        else:
-                            mouse_direction = (mouse_direction[0]/math.sqrt(mouse_direction[0]**2+mouse_direction[1]**2), mouse_direction[1]/math.sqrt(mouse_direction[0]**2+mouse_direction[1]**2))
-                        keyboardcommands.append(str(mouse_direction[0]))
-                        keyboardcommands.append(str(mouse_direction[1]))
+                    if keys[MENU]:
+                        self.meun_open = not self.meun_open
+                    if self.killed:
+                        self.meun_open = True
 
-                    sendkeys = ','.join(str(key) for key in keyboardcommands)
-                    self.sendkeys = sendkeys
-                    self.client.send(sendkeys.encode('utf-8'))
+                    if event.type == pygame.MOUSEBUTTONDOWN and self.meun_open:
+                        for button in self.meun_buttons:
+                            if button.is_hovered(pygame.mouse.get_pos()):
+                                button.click()
+                        
+
+                    if not self.meun_open:
+                        # every key on the keyboard 
+                        keyboardcommands = [",KEYS:"]
+                        if keys[UP]:
+                            keyboardcommands.append("UP")
+                        if keys[DOWN]:
+                            keyboardcommands.append("DOWN")
+                        if keys[LEFT]:
+                            keyboardcommands.append("LEFT")
+                        if keys[RIGHT]:
+                            keyboardcommands.append("RIGHT")
+                        if keys[FAST]:
+                            keyboardcommands.append("FAST")
+                        if keys[FIRE]:
+                            keyboardcommands.append("FIRE")
+                            mousepos = pygame.mouse.get_pos()
+                            # figure out the direction of the mouse relative to the in the form of a space on a unit circle
+                            player_location = ((player_x+screen_width/2-25)+self.camera_ajustment[0]+25,(player_y+screen_height/2-25)+self.camera_ajustment[1]+25)
+                            mouse_direction = (mousepos[0]-player_location[0], mousepos[1]-player_location[1])
+                            if mouse_direction[0] == 0 and mouse_direction[1] == 0:
+                                mouse_direction = (0, 0)
+                            else:
+                                mouse_direction = (mouse_direction[0]/math.sqrt(mouse_direction[0]**2+mouse_direction[1]**2), mouse_direction[1]/math.sqrt(mouse_direction[0]**2+mouse_direction[1]**2))
+                            keyboardcommands.append(str(mouse_direction[0]))
+                            keyboardcommands.append(str(mouse_direction[1]))
+
+                        sendkeys = ','.join(str(key) for key in keyboardcommands)
+                        self.sendkeys = sendkeys
+                        self.client.send(sendkeys.encode('utf-8'))
+
+
                 elif event.type == pygame.MOUSEMOTION:
                     keyboardcommands = [",ORIENTATION:"]
                     mousepos = pygame.mouse.get_pos()

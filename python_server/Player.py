@@ -20,6 +20,13 @@ class player(gameobjectvolume):
         self.reload_timer = time.time()
         self.bullets = []
 
+    def respawn(self, x, y):
+        self.x = x
+        self.y = y
+        self.alive = True
+        self.health = 100
+        
+
     def shoot(self, bullet):
         self.bullets.append(bullet)
         self.reload_timer = time.time()
@@ -84,6 +91,31 @@ class player(gameobjectvolume):
                     if self.y + self.height > object.y and self.y < object.y + object.height:
                         collided.append(object)
         return collided
+
+    
+    
+    def collide(self, obj):
+        # move the player out of the object
+        # if the object is above the player
+        if self.y + self.height < obj.y + obj.height / 2:
+            self.y = obj.y - self.height
+        # if the object is below the player
+        if self.y > obj.y + obj.height / 2:
+            self.y = obj.y + obj.height
+        # if the object is to the left of the player
+        if self.x + self.width < obj.x + obj.width / 2:
+            self.x = obj.x - self.width
+        # if the object is to the right of the player
+        if self.x > obj.x + obj.width / 2:
+            self.x = obj.x + obj.width
+            
+        
+
+        
+            
+        
+
+    
 
     def __str__(self):
         return f"player:{self.username}"
