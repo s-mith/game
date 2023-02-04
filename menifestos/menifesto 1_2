@@ -1,0 +1,13 @@
+MORE GAMEOBJECT CLASSES
+
+gameobject_collsion []
+
+gameobject_velocity []
+
+gameobject_collide []
+
+rework names so that they use the naming scheme of obejct types follow by _function_function...
+
+
+
+exports.py []

@@ -1,0 +1,32 @@
+REWORK communication BETWEEN SERVER AND client [x]
+
+bullet class [x] 
+    1. bullet class is a game object that is a bullet [x]
+    2. bullet class has a direction and speed [x]
+    3. bullet class has a .move function that updates the bullet [x]
+
+player class [x]
+    1. player class is a game object that is a player [x]
+
+added walls [x]
+    1. added walls [x]
+    2. walls are game objects [x]
+
+game client main menu like minecraft [x]
+    1. make a main menu [x]
+        1. make a login screen [x]
+        4. make a server join window [x]
+    
+
+client UI [x]
+    1. make a UI [x]
+        6. make a escape menu [x]
+        10. score board [x]
+
+GameObjectVolume [x]
+    1. make a game object volume [x]
+    2. it has width and height! [x]
+
+    
+
+
