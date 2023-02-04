@@ -8,7 +8,7 @@ sys.path.insert(0, 'game_objects')
 from World import world
 
 PORT = 3004
-HOST = '0.0.0.0'
+HOST = '127.0.0.1'
 
 DELTA_TIME = 1/60
 

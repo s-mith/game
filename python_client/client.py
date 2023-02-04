@@ -26,7 +26,7 @@ class GameClient:
         self.client = None
         self.user = input('username: ')
         self.password = input('password: ')
-        self.host, self.port = "134.195.121.194", 3004
+        self.host, self.port = "localhost", 3004
         # try:
         #     self.host, self.port = input("server address: ").split(':')
         #     self.port = int(self.port)
