@@ -12,7 +12,7 @@ HOST = '0.0.0.0'
 
 DELTA_TIME = 1/60
 
-
+f = "0"
         
 
 class user:
