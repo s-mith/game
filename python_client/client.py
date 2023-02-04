@@ -15,7 +15,7 @@ RIGHT = pygame.K_d
 FAST = pygame.K_LSHIFT
 FIRE = pygame.K_SPACE
 MENU = pygame.K_ESCAPE
-HOST = "localhost"
+HOST = "134.195.121.194"
 PORT = 3004
 
 COLORS = ["#FFE5CC", "#E6E6FA", "#BDBDBD", "#F4F4F4", "#B3E5FC", "#B3E5FC", "#ffffff", "#000000"]

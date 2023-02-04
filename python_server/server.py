@@ -5,7 +5,7 @@ import time
 from World import world
 
 PORT = 3004
-HOST = 'localhost'
+HOST = '0.0.0.0'
 
 DELTA_TIME = 1/60
 global count
