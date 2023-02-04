@@ -19,12 +19,14 @@ class player(gameobjectvolume):
         self.reload_time = 0.2
         self.reload_timer = time.time()
         self.bullets = []
+        self.score = 0
 
     def respawn(self, x, y):
         self.x = x
         self.y = y
         self.alive = True
         self.health = 100
+        self.score = 0
         
 
     def shoot(self, bullet):
@@ -52,7 +54,7 @@ class player(gameobjectvolume):
         if self.velocity_y > -self.max_velocity:
             self.velocity_y -= self.velocity_increment
 
-    def move(self):
+    def move(self, objects):
         self.x += self.velocity_x
         self.y += self.velocity_y
         self.velocity_x *= self.friction
@@ -61,6 +63,15 @@ class player(gameobjectvolume):
             self.velocity_x = 0
         if abs(self.velocity_y) <= 0.1:
             self.velocity_y = 0
+
+        collisided = self.collisions(objects)
+        for object in collisided:
+            if hasattr(object, "is_solid"):
+                if object.is_solid:
+                    self.collide(object)
+        
+
+        
 
     def commands(self, commands):
         if "DOWN" in commands:
@@ -97,25 +108,41 @@ class player(gameobjectvolume):
     def collide(self, obj):
         # move the player out of the object
         # if the object is above the player
-        if self.y + self.height < obj.y + obj.height / 2:
-            self.y = obj.y - self.height
+        moves = [[],[]]
+        moves[1].append(obj.y - self.height)
         # if the object is below the player
-        if self.y > obj.y + obj.height / 2:
-            self.y = obj.y + obj.height
+        moves[1].append(obj.y + obj.height)
         # if the object is to the left of the player
-        if self.x + self.width < obj.x + obj.width / 2:
-            self.x = obj.x - self.width
+        moves[0].append(obj.x - self.width)
         # if the object is to the right of the player
-        if self.x > obj.x + obj.width / 2:
-            self.x = obj.x + obj.width
-            
-        
+        moves[0].append(obj.x + obj.width)
 
+        # do the move from the list that is the shortest
+        # loop through each list of lists
+        index = 0
+        sub_index = 0
+        shortest = abs(moves[index][sub_index] - self.x)
+        for i,sublist in enumerate(moves):
+            # loop through each list
+            for j,move in enumerate(sublist):
+                
+                if i == 0:
+                    if abs(move - self.x) < shortest:
+                        shortest = abs(move - self.x)
+                        index = i
+                        sub_index = j
+                else:
+                    if abs(move - self.y) < shortest:
+                        shortest = abs(move - self.y)
+                        index = i
+                        sub_index = j
+        # set the new position
+        if index == 0:
+            self.x = moves[index][sub_index]
+        else:
+            self.y = moves[index][sub_index]
         
-            
         
-
-    
 
     def __str__(self):
         return f"player:{self.username}"

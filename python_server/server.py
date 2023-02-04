@@ -44,13 +44,25 @@ class Server:
                 try:
                     # get gameobjects within 2000 from player
                     player = self.world.players[socket]
-                    gameobjects = self.world.gameobjects_near(player.x, player.y, 1100, 700)
+                    gameobjects = self.world.gameobjects_near(player.x, player.y, 1800, 1000)
                     # subtract player x and y from gameobjects
                     colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff", "#ffffff", "#000000"]
                     
                     finalGameObjects = ""
                     world = self.world.__str__().split(":")
-                    finalGameObjects += f"{world[0]},{world[1]},{self.world.tile_size}\n"
+                    top_players = self.world.top_players()
+                    
+                    final_top_players = []
+                    for playerv in top_players:
+                        final_top_players.append([playerv.username, playerv.score])
+                        
+                    if len(final_top_players) < 3:
+                        for i in range(3 - len(final_top_players)):
+                            final_top_players.append(["", ""])
+
+                    
+                    finalGameObjects += f"{world[0]},{world[1]},{self.world.tile_size},{final_top_players[0][0]},{final_top_players[0][1]},{final_top_players[1][0]},{final_top_players[1][1]},{final_top_players[2][0]},{final_top_players[2][1]}\n"
+                    
                     for gameobject in gameobjects:
                         info = gameobject.__str__().split(":")
                         if info[0] == "player":
@@ -117,13 +129,13 @@ class Server:
                             self.world.players[socket].orientation = [float(playerinput[playerinput.index("FIRE")+1]),  float(playerinput[playerinput.index("FIRE")+2])]
                     elif playerinput[0] == "ORIENTATION:":
                         self.world.players[socket].orientation = [float(playerinput[1]),  float(playerinput[2])]
-                    elif playerinput[0] == "ACTIONS:":
-                        if playerinput[1] == "respawn":
-                            # randomize spawn location
-                            
-                            world_width = self.world.tile_width/2 * self.world.tile_size
-                            world_height = self.world.tile_height/2 * self.world.tile_size
-                            self.world.players[socket].respawn(random.randint(-world_width, world_width), random.randint(-world_height, world_height))
+                if playerinput[0] == "ACTIONS:":
+                    if playerinput[1] == "respawn":
+                        # randomize spawn location
+                        
+                        world_width = ((self.world.tile_width/2) * self.world.tile_size) - self.world.tile_size
+                        world_height = ((self.world.tile_height/2) * self.world.tile_size) - self.world.tile_size
+                        self.world.players[socket].respawn(random.randint(-world_width, world_width), random.randint(-world_height, world_height))
 
 
                     
@@ -145,7 +157,6 @@ class Server:
 
             
             self.world.check_bullets()
-            self.world.check_collisions()
             
             self.world.check_deaths()
 
@@ -163,8 +174,8 @@ class Server:
             password = socket.recv(1024).decode('utf-8')
 
             self.users[socket] = user(socket, address)
-            world_width = self.world.tile_width/2 * self.world.tile_size
-            world_height = self.world.tile_height/2 * self.world.tile_size
+            world_width = ((self.world.tile_width/2) * self.world.tile_size) - self.world.tile_size
+            world_height = ((self.world.tile_height/2) * self.world.tile_size) - self.world.tile_size
             self.world.make_player(socket, random.randint(-world_width, world_width), random.randint(-world_height, world_height), socket, username, password)
             print(f"{username} connected from {address}!")
             thread = threading.Thread(target=self.handle, args=(socket,))

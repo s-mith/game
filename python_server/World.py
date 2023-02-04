@@ -11,9 +11,9 @@ class world(gameobject):
         super().__init__(x, y, id)
         self.players = {}
         self.bullets = []
-        self.tile_width = 200
-        self.tile_height = 200
-        self.tile_size = 100
+        self.tile_width = 10
+        self.tile_height = 10
+        self.tile_size = 400
         self.tile_map = []
         # create a 2d array of tiles
         colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff"]
@@ -65,14 +65,13 @@ class world(gameobject):
                 if bullet.owner != target.id:
                     target.health -= bullet.damage
                     self.remove_bullet(bullet)
+                    # give the player who shot the bullet a point
+                    self.players[bullet.owner].score += 1
 
-    def check_collisions(self):
-        for player in self.players.values():
-            collisions = player.collisions(self.flat_map())
-            
-            for collision in collisions:
-                if collision.is_solid:
-                    player.collide(collision)
+    
+    def top_players(self):
+        return sorted(list(self.players.values()), key=lambda x: x.score, reverse=True)
+
 
 
     
@@ -88,7 +87,7 @@ class world(gameobject):
         time_now = time.time()
         for OBJ in self.all_gameobjects():
             if hasattr(OBJ, 'move'):
-                OBJ.move()
+                OBJ.move(self.all_gameobjects())
             if type(OBJ) == bullet:
                 if OBJ.birth + OBJ.lifetime < time_now:
                     self.remove_bullet(OBJ)

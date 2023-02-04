@@ -12,7 +12,7 @@ class bullet(gameobjectvolume):
         self.lifetime = 5
         
 
-    def move(self):
+    def move(self, objects):
         self.x += self.velocity_x
         self.y += self.velocity_y
 
