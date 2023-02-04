@@ -6,6 +6,7 @@ from World import world
 
 PORT = 3004
 HOST = '0.0.0.0'
+HOST = 'localhost'
 
 DELTA_TIME = 1/60
 global count
@@ -48,7 +49,7 @@ class Server:
                     # subtract player x and y from gameobjects
                     colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff", "#ffffff", "#000000"]
                     
-                    finalGameObjects = ""
+                    finalGameObjects = "@@@"
                     world = self.world.__str__().split(":")
                     top_players = self.world.top_players()
                     

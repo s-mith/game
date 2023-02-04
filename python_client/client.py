@@ -16,6 +16,7 @@ FAST = pygame.K_LSHIFT
 FIRE = pygame.K_SPACE
 MENU = pygame.K_ESCAPE
 HOST = "134.195.121.194"
+# HOST = "localhost"
 PORT = 3004
 
 COLORS = ["#FFE5CC", "#E6E6FA", "#BDBDBD", "#F4F4F4", "#B3E5FC", "#B3E5FC", "#ffffff", "#000000"]
@@ -98,6 +99,7 @@ class GameClient:
         self.user = ""
         self.password = ""
         self.game_info = []
+        self.raw_game_info = ""
         self.killed = False
         self.new_game_info = ""
         self.camera_delay = 10
@@ -110,45 +112,38 @@ class GameClient:
         self.do_respawn = False
         self.meun_buttons = []
         self.player_status = "1"
+        self.received = False
                            
         self.ui()        
 
     def collect_data(self):
-        while True:
+        while self.client != None:
             part = self.client.recv(2500).decode('utf-8')
             if part == "LOGIN":
-                return part
-            if "///" in part:
-                # split on first occurence of /// and return the first part
-                end_of_return, start_of_new = part.split("///", 1)
-                temp = self.new_game_info
-                self.new_game_info = start_of_new
-                
-                return temp + end_of_return
-            else:
-                temp = "".join((self.new_game_info, part))
-                self.new_game_info = temp
-            # except:
-            #     print('An error occured!')
-            #     pass          
-
-    def receive(self):
-        while self.client != None:
-            game_info = ""
-            game_info = self.collect_data()
-
-            if game_info == 'LOGIN':
                 self.client.send(self.user.encode('utf-8'))
                 self.client.send(self.password.encode('utf-8'))
+                self.received = True
             else:
-                # game info is normally a string that has multiple rows of coma seperated values
-                try:
-                    game_info = game_info.split("\n")
-                    game_info = list(filter(lambda x : x != '', game_info))
-                    game_info = list(map(lambda x : x.split(","), game_info))
-                    self.game_info = game_info
-                except:
-                    pass
+                self.new_game_info = "".join((self.new_game_info, part))
+                # set raw game info to everything between @@@ and /// and reset new game info
+                if "@@@" in self.new_game_info and "///" in self.new_game_info:
+                    self.raw_game_info = self.new_game_info[self.new_game_info.index("@@@")+3:self.new_game_info.index("///")]
+                    print(self.raw_game_info)
+                    self.new_game_info = ""
+                
+                
+
+
+    def decode(self):
+        while self.client != None:
+            # game info is normally a string that has multiple rows of coma seperated values
+            try:
+                game_info = self.raw_game_info.split("\n")
+                game_info = list(filter(lambda x : x != '', game_info))
+                game_info = list(map(lambda x : x.split(","), game_info))
+                self.game_info = game_info
+            except:
+                pass
 
     def kill(self):
         self.killed = True
@@ -167,8 +162,10 @@ class GameClient:
     def login(self):
         self.connect()
         # start a thread that will receive data from the server
-        self.receive_thread = threading.Thread(target=self.receive)
-        self.receive_thread.start()
+        self.collect_thread = threading.Thread(target=self.collect_data)
+        self.decode_thread = threading.Thread(target=self.decode)
+        self.collect_thread.start()
+        self.decode_thread.start()
 
 
 
@@ -180,7 +177,7 @@ class GameClient:
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         screen_width, screen_height = pygame.display.get_surface().get_size()
         while self.killed == False:
-            if self.client:
+            if self.client and self.received:
                 buttons = [
                             {"color": (255, 255, 255), "text": "respawn", "text_color": (0, 0, 0), "action": self.respawn, "hover":(0,255,0)},
                             {"color": (255, 255, 255), "text": "resume", "text_color": (0, 0, 0), "action": self.resume, "hover":(77,77,77)},
@@ -507,7 +504,6 @@ class GameClient:
             self.client.close()
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((self.host, self.port))
-        self.receive_thread = threading.Thread(target=self.receive)
-        self.receive_thread.start()
+
 
 client = GameClient()
