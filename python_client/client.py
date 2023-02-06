@@ -16,7 +16,7 @@ FAST = pygame.K_LSHIFT
 FIRE = pygame.K_SPACE
 MENU = pygame.K_ESCAPE
 HOST = "134.195.121.194"
-# HOST = "localhost"
+HOST = "localhost"  
 PORT = 3004
 
 COLORS = ["#FFE5CC", "#E6E6FA", "#BDBDBD", "#F4F4F4", "#B3E5FC", "#B3E5FC", "#ffffff", "#000000"]
@@ -98,10 +98,8 @@ class GameClient:
         self.port = PORT
         self.user = ""
         self.password = ""
-        self.game_info = []
-        self.raw_game_info = ""
+        self.game_info = {}
         self.killed = False
-        self.new_game_info = ""
         self.camera_delay = 10
         self.camera_ajustment = [0,0]
         self.reset_camera = [False, False]
@@ -113,37 +111,71 @@ class GameClient:
         self.meun_buttons = []
         self.player_status = "1"
         self.received = False
+        self.last_fail = time.time()
+        self.UUID = ""
+        
                            
         self.ui()        
 
     def collect_data(self):
         while self.client != None:
-            part = self.client.recv(2500).decode('utf-8')
-            if part == "LOGIN":
+            data = self.client.recv(1024).decode('utf-8')
+            # remove plus signs
+            data = data.replace("+", "")
+
+            
+            if data == "LOGIN":
                 self.client.send(self.user.encode('utf-8'))
                 self.client.send(self.password.encode('utf-8'))
+                self.UUID = self.client.recv(1024).decode('utf-8')
                 self.received = True
             else:
-                self.new_game_info = "".join((self.new_game_info, part))
-                # set raw game info to everything between @@@ and /// and reset new game info
-                if "@@@" in self.new_game_info and "///" in self.new_game_info:
-                    self.raw_game_info = self.new_game_info[self.new_game_info.index("@@@")+3:self.new_game_info.index("///")]
-                    print(self.raw_game_info)
-                    self.new_game_info = ""
-                
-                
+                data=data.split("\n")
+                for gameobject in data: 
+                    fail = False
+                    if gameobject != "":
+                        gameobject = gameobject.split(",")
+                        if len(gameobject) > 1:
+                            if len(gameobject[0]) == 36:
+                                if gameobject[1] == "tile" and len(gameobject) == 7:
+                                    if gameobject[-1] == "cap":
+                                        self.game_info[gameobject[0]] = gameobject[1:]
+                                    else:
+                                        fail = True
+                                elif gameobject[1] == "bullet" and len(gameobject) == 9:
+                                    if gameobject[-1] == "cap":
+                                        self.game_info[gameobject[0]] = gameobject[1:]
+                                    else:
+                                        fail = True
+                                elif gameobject[1] == "player" and len(gameobject) == 11:
+                                    if gameobject[-1] == "cap":
+                                        self.game_info[gameobject[0]] = gameobject[1:]
+                                    else:
+                                        fail = True
+                                elif gameobject[1] == "world" and len(gameobject) == 11:
+                                    if gameobject[-1] == "cap":
+                                        self.game_info[gameobject[0]] = gameobject[1:]
+                                    else:
+                                        fail = True
+                                else:
+                                    fail = True
+                            else:
+                                fail = True
+                        else:
+                            fail = True
+                    else:
+                        fail = True
+                    if fail and time.time() - self.last_fail > 10:
+                        print(gameobject)
+                        self.last_fail = time.time()
+
+                    
+                        
+                        
 
 
-    def decode(self):
-        while self.client != None:
-            # game info is normally a string that has multiple rows of coma seperated values
-            try:
-                game_info = self.raw_game_info.split("\n")
-                game_info = list(filter(lambda x : x != '', game_info))
-                game_info = list(map(lambda x : x.split(","), game_info))
-                self.game_info = game_info
-            except:
-                pass
+                    
+
 
     def kill(self):
         self.killed = True
@@ -163,13 +195,7 @@ class GameClient:
         self.connect()
         # start a thread that will receive data from the server
         self.collect_thread = threading.Thread(target=self.collect_data)
-        self.decode_thread = threading.Thread(target=self.decode)
         self.collect_thread.start()
-        self.decode_thread.start()
-
-
-
-
     
     def ui(self):
         pygame.init()
@@ -200,96 +226,128 @@ class GameClient:
                     score2 = ""
                     name3 = ""
                     score3 = ""
-                    try:
-                        for gameobject in self.game_info:
-                            if gameobject[0] == "world":
-                                self.tile_size = int(gameobject[2])
-                                # put the score in the top left corner
-                                name1 = gameobject[3]
-                                score1 = gameobject[4]
-                                name2 = gameobject[5]
-                                score2 = gameobject[6]
-                                name3 = gameobject[7]
-                                score3 = gameobject[8]
+                    # try:
+                    # make a copy of self.game_info so we can iterate over it
+                    game_info_copy = self.game_info.copy()
 
-                            if gameobject[0] == "player":
-                                name = gameobject[1]
-                                x = float(gameobject[2])
-                                y = float(gameobject[3])
-                                if name == self.user:
-                                    player_x = x
-                                    player_y = y
-                                w = int(gameobject[4])
-                                h = int(gameobject[5])
-                                color = gameobject[6]
-                                health = gameobject[7]
-                                alive = gameobject[8]
-                                # if alive == "0" everything should be transparent
-                                if alive == "1":
-                                    if self.player_status == "0":
-                                        self.player_status = "1"
-                                        self.meun_open = False 
-                                    pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
-                                    # draw name under the player
-                                    font = pygame.font.SysFont('Comic Sans MS', 25)
-                                    text = font.render(name, True, (0, 0, 0))
-                                    textRect = text.get_rect()
-                                    textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
-                                    screen.blit(text, textRect)
-                                    # draw health bar
-                                    # draw a white rectangle above the player
-                                    
-                                    pygame.draw.rect(screen, pygame.Color(COLORS[6]), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25 ,((y+screen_height/2-25)+self.camera_ajustment[1]-13), w*1.5, 10))
-                                    pygame.draw.rect(screen, pygame.Color("#ff0000"), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25,((y+screen_height/2-25)+self.camera_ajustment[1]-13), (w*(int(health)/100))*1.5, 10))
-                                else:
-                                    # make the player transparent
-                                    if name == self.user:
-                                        self.meun_open = True
-                                        self.player_status = "0"
-                                    # pygame.draw.rect(screen, pygame.Color((255,255,255)), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
-                                    s = pygame.Surface((w, h), pygame.SRCALPHA)   
-                                    s.fill((255,255,255,155))                
-                                    screen.blit(s, ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1]))
-                                    # draw name under the player
-                                    font = pygame.font.SysFont('Comic Sans MS', 10)
-                                    text = font.render(name+"[dead]", True, (0, 0, 0))
-                                    text.set_alpha(155)
-                                    textRect = text.get_rect()
-                                    textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
-                                    screen.blit(text, textRect)
+                    world = {}
+                    players = {}
+                    bullets = {}
+                    tiles = {}
 
+                    for gameobject in game_info_copy.keys():
+                        if gameobject != "":
+                            if game_info_copy[gameobject][0] == "world":
+                                world[gameobject] = game_info_copy[gameobject]
+                            elif game_info_copy[gameobject][0] == "player":
+                                players[gameobject] = game_info_copy[gameobject]
+                            elif game_info_copy[gameobject][0] == "bullet":
+                                bullets[gameobject] = game_info_copy[gameobject]
+                            elif game_info_copy[gameobject][0] == "tile":
+                                tiles[gameobject] = game_info_copy[gameobject]
 
-                                # draw a red rectangle above the player
-                            elif gameobject[0] == "bullet":
-                                x = float(gameobject[2])
-                                y = float(gameobject[3])
-                                w = int(gameobject[4])
-                                h = int(gameobject[5])
-                                color = gameobject[6]
+                    game_info_copy = {}
+                    # add the gameobjects in the correct order
+                    game_info_copy.update(world)
+                    game_info_copy.update(tiles)
+                    game_info_copy.update(bullets)
+                    game_info_copy.update(players)
+
+                    
+                    for gameobject in game_info_copy.keys():
+                        # print(gameobject + " " + str(game_info_copy[gameobject]))
+                        if game_info_copy[gameobject][0] == "world":
+                            self.tile_size = int(game_info_copy[gameobject][2])
+                            # put the score in the top left corner
+                            name1 = game_info_copy[gameobject][3]
+                            score1 = game_info_copy[gameobject][4]
+                            name2 = game_info_copy[gameobject][5]
+                            score2 = game_info_copy[gameobject][6]
+                            name3 = game_info_copy[gameobject][7]
+                            score3 = game_info_copy[gameobject][8]
+
+                        if game_info_copy[gameobject][0] == "player":
+                            name = game_info_copy[gameobject][1]
+                            x = float(game_info_copy[gameobject][2])
+                            y = float(game_info_copy[gameobject][3])
+                            if name == self.user:
+                                player_x = x
+                                player_y = y
+                            w = int(game_info_copy[gameobject][4])
+                            h = int(game_info_copy[gameobject][5])
+                            color = game_info_copy[gameobject][6]
+                            health = game_info_copy[gameobject][7]
+                            alive = game_info_copy[gameobject][8]
+                            # if alive == "0" everything should be transparent
+                            if alive == "1":
+                                if self.player_status == "0":
+                                    self.player_status = "1"
+                                    self.meun_open = False 
                                 pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
-                            elif gameobject[0] == "tile":
-                                x = float(gameobject[2])
-                                y = float(gameobject[3])
-                                color = gameobject[4]
-                                pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], self.tile_size, self.tile_size))
-                        
-                        if self.meun_open:
-                                # make the buttons with 200 width and 50 height centered on the screen
-                                # get the mouse position
-                                for button in self.meun_buttons:
-                                    button.is_hovered(pygame.mouse.get_pos())
-                                    button.draw(screen) 
-                        font = pygame.font.SysFont('Comic Sans MS', 40)
-                        textsurface = font.render(name1 + ": " + score1, False, (255, 255, 255))
-                        screen.blit(textsurface,(0,0))
-                        if name2 != "":
-                            textsurface = font.render(name2 + ": " + score2, False, (255, 255, 255))
-                            screen.blit(textsurface,(0,40))
-                        if name3 != "":
-                            textsurface = font.render(name3 + ": " + score3, False, (255, 255, 255))
-                            screen.blit(textsurface,(0,80))
-                    except:
-                        pass
+                                # draw name under the player
+                                font = pygame.font.SysFont('Comic Sans MS', 25)
+                                text = font.render(name, True, (0, 0, 0))
+                                textRect = text.get_rect()
+                                textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
+                                screen.blit(text, textRect)
+                                # draw health bar
+                                # draw a white rectangle above the player
+                                
+                                pygame.draw.rect(screen, pygame.Color(COLORS[6]), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25 ,((y+screen_height/2-25)+self.camera_ajustment[1]-13), w*1.5, 10))
+                                pygame.draw.rect(screen, pygame.Color("#ff0000"), (((x+screen_width/2-25)+self.camera_ajustment[0])-w*.25,((y+screen_height/2-25)+self.camera_ajustment[1]-13), (w*(int(health)/100))*1.5, 10))
+                            else:
+                                # make the player transparent
+                                if name == self.user:
+                                    self.meun_open = True
+                                    self.player_status = "0"
+                                # pygame.draw.rect(screen, pygame.Color((255,255,255)), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
+                                s = pygame.Surface((w, h), pygame.SRCALPHA)   
+                                s.fill((255,255,255,155))                
+                                screen.blit(s, ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1]))
+                                # draw name under the player
+                                font = pygame.font.SysFont('Comic Sans MS', 10)
+                                text = font.render(name+"[dead]", True, (0, 0, 0))
+                                text.set_alpha(155)
+                                textRect = text.get_rect()
+                                textRect.center = ((x+screen_width/2)+self.camera_ajustment[0],(y+screen_height/2+37)+self.camera_ajustment[1])
+                                screen.blit(text, textRect)
+
+
+                            # draw a red rectangle above the player
+                        elif game_info_copy[gameobject][0] == "bullet":
+                            x = float(game_info_copy[gameobject][2])
+                            y = float(game_info_copy[gameobject][3])
+                            w = int(game_info_copy[gameobject][4])
+                            h = int(game_info_copy[gameobject][5])
+                            color = game_info_copy[gameobject][6]
+                            pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], w, h))
+                        elif game_info_copy[gameobject][0] == "tile":
+                            x = float(game_info_copy[gameobject][2])
+                            y = float(game_info_copy[gameobject][3])
+                            color = game_info_copy[gameobject][4]
+                            pygame.draw.rect(screen, pygame.Color(COLORS[int(color)]), ((x+screen_width/2-25)+self.camera_ajustment[0],(y+screen_height/2-25)+self.camera_ajustment[1], self.tile_size, self.tile_size))
+                    
+
+                    
+
+                    if self.meun_open:
+                            # make the buttons with 200 width and 50 height centered on the screen
+                            # get the mouse position
+                            for button in self.meun_buttons:
+                                button.is_hovered(pygame.mouse.get_pos())
+                                button.draw(screen) 
+                    font = pygame.font.SysFont('Comic Sans MS', 40)
+                    textsurface = font.render(name1 + ": " + score1, False, (255, 255, 255))
+                    screen.blit(textsurface,(0,0))
+                    if name2 != "":
+                        textsurface = font.render(name2 + ": " + score2, False, (255, 255, 255))
+                        screen.blit(textsurface,(0,40))
+                    if name3 != "":
+                        textsurface = font.render(name3 + ": " + score3, False, (255, 255, 255))
+                        screen.blit(textsurface,(0,80))
+                    # except Exception as e:
+                    #     print(e)
+                    #     pass
                     if self.do_respawn:
                         self.client.send(",ACTIONS:,respawn".encode('utf-8'))
                         self.do_respawn = False
@@ -488,12 +546,9 @@ class GameClient:
                             self.password = passwordFeild.text
 
                     pygame.display.flip()
-        print("killed")
         pygame.quit()
-        print("killed")
-        # kill the program
         exit()
-        print("killed")
+
 
             
 

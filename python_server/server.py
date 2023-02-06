@@ -40,70 +40,83 @@ class Server:
 
     def update(self):
         """Sends the current state of the world to all clients."""
-        try:
-            for socket in self.users:
-                try:
-                    # get gameobjects within 2000 from player
-                    player = self.world.players[socket]
-                    gameobjects = self.world.gameobjects_near(player.x, player.y, 1800, 1000)
-                    # subtract player x and y from gameobjects
-                    colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff", "#ffffff", "#000000"]
-                    
-                    finalGameObjects = "@@@"
-                    world = self.world.__str__().split(":")
-                    top_players = self.world.top_players()
-                    
-                    final_top_players = []
-                    for playerv in top_players:
-                        final_top_players.append([playerv.username, playerv.score])
-                        
-                    if len(final_top_players) < 3:
-                        for i in range(3 - len(final_top_players)):
-                            final_top_players.append(["", ""])
+        for socket in self.users:
+            # try:
+            # get gameobjects within 2000 from player
+            player = self.world.players[socket]
+            gameobjects = self.world.gameobjects_near(player.x, player.y, 1800, 1000)
+            # subtract player x and y from gameobjects
+            colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff", "#ff00ff", "#ffffff", "#000000"]
 
-                    
-                    finalGameObjects += f"{world[0]},{world[1]},{self.world.tile_size},{final_top_players[0][0]},{final_top_players[0][1]},{final_top_players[1][0]},{final_top_players[1][1]},{final_top_players[2][0]},{final_top_players[2][1]}\n"
-                    
-                    for gameobject in gameobjects:
-                        info = gameobject.__str__().split(":")
-                        if info[0] == "player":
-                            color_id = colors.index(gameobject.color)
-                            x = gameobject.x - player.x
-                            y = gameobject.y - player.y
-                            alive = int(gameobject.alive)
-                            finalGameObjects += f"{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id},{gameobject.health},{alive}\n"
-                        elif info[0] == "bullet":
-                            color_id = colors.index(gameobject.color)
-                            x = gameobject.x - player.x
-                            y = gameobject.y - player.y
-                            finalGameObjects += f"{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id}\n"
-                        elif info[0] == "tile":
-                            color_id = colors.index(gameobject.color)
-                            x = gameobject.x - player.x
-                            y = gameobject.y - player.y
-                            finalGameObjects += f"{info[0]},{info[1]},{x},{y},{color_id}\n"
+            world = self.world.__str__().split(":")
+            top_players = self.world.top_players()
+            
+            final_top_players = []
+            for playerv in top_players:
+                final_top_players.append([playerv.username, playerv.score])
+                
+            if len(final_top_players) < 3:
+                for i in range(3 - len(final_top_players)):
+                    final_top_players.append(["", ""])
+
+            
+            finalGameObjects = f"{self.world.uuid},{world[0]},{world[1]},{self.world.tile_size},{final_top_players[0][0]},{final_top_players[0][1]},{final_top_players[1][0]},{final_top_players[1][1]},{final_top_players[2][0]},{final_top_players[2][1]},cap\n"
+            
+            for gameobject in gameobjects:
+                info = gameobject.__str__().split(":")
+                if info[0] == "player":
+                    color_id = colors.index(gameobject.color)
+                    x = gameobject.x - player.x
+                    y = gameobject.y - player.y
+                    alive = int(gameobject.alive)
+                    finalGameObjects += f"{gameobject.uuid},{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id},{gameobject.health},{alive},cap\n"
+                elif info[0] == "bullet":
+                    color_id = colors.index(gameobject.color)
+                    x = gameobject.x - player.x
+                    y = gameobject.y - player.y
+                    finalGameObjects += f"{gameobject.uuid},{info[0]},{info[1]},{x},{y},{gameobject.width},{gameobject.height},{color_id},cap\n"
+                elif info[0] == "tile":
+                    color_id = colors.index(gameobject.color)
+                    x = gameobject.x - player.x
+                    y = gameobject.y - player.y
+                    finalGameObjects += f"{gameobject.uuid},{info[0]},{info[1]},{x},{y},{color_id},cap\n"
 
 
-                    # remove player and append to the end
-                    
-                    # format x, y, w, h, c seperated by colons
-                    
-                    
-                    # make gameobjects into a string
-                    # remove last newline
-                    finalGameObjects = finalGameObjects[:-1]
-                    finalGameObjects += "///"
-                    # send to client
+            # remove player and append to the end
+            
+            # format x, y, w, h, c seperated by colons
+            
+            
+            
+            # make gameobjects into a string
+            # remove last newline
+            
 
+            # send to client
+
+            finalGameObjects = finalGameObjects.split("\n")
+            
+            
+            while len(finalGameObjects) > 0:
+                chunk = ""
+                while len(chunk+finalGameObjects[0]) < 1024 and len(finalGameObjects) > 0:
+                    chunk += finalGameObjects[0] + "\n"
+                    finalGameObjects = finalGameObjects[1:]
+                    if len(finalGameObjects) == 0:
+                        break
+                # padd it with pluses
+                while len(chunk) < 1024:
+                    chunk += "+"
                     
-                    finalGameObjectChunks = [finalGameObjects[i:i+2500] for i in range(0, len(finalGameObjects), 2500)]
-                    for chunk in finalGameObjectChunks:
-                        socket.send(chunk.encode('utf-8'))
-                    
-                except:
-                    pass
-        except:
-            pass
+                socket.send(chunk.encode('utf-8'))
+
+              
+                
+            # except Exception as e:
+            #     print(e, "error sending to client")
+            #     pass
+                
+                
 
     def kill(self, socket):
         socket.close()
@@ -173,12 +186,15 @@ class Server:
 
             username = socket.recv(1024).decode('utf-8')
             password = socket.recv(1024).decode('utf-8')
+            
 
             self.users[socket] = user(socket, address)
             world_width = ((self.world.tile_width/2) * self.world.tile_size) - self.world.tile_size
             world_height = ((self.world.tile_height/2) * self.world.tile_size) - self.world.tile_size
             self.world.make_player(socket, random.randint(-world_width, world_width), random.randint(-world_height, world_height), socket, username, password)
             print(f"{username} connected from {address}!")
+            # send the uuid of the player to the client
+            socket.send(str(self.world.players[socket].uuid).encode('utf-8'))
             thread = threading.Thread(target=self.handle, args=(socket,))
             thread.start()
 
