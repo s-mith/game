@@ -1,2 +1,3 @@
 # ignore everying thing in python_client/build
-+python_client/build
+
+python_client/build/
