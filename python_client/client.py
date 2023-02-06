@@ -166,7 +166,7 @@ class GameClient:
                     else:
                         fail = True
                     if fail and time.time() - self.last_fail > 10:
-                        print(gameobject)
+                        # print(gameobject)
                         self.last_fail = time.time()
 
                     
