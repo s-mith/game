@@ -6,7 +6,7 @@ from World import world
 
 PORT = 3004
 HOST = '0.0.0.0'
-HOST = 'localhost'
+# HOST = 'localhost'
 
 DELTA_TIME = 1/60
 global count
@@ -107,7 +107,7 @@ class Server:
                 # padd it with pluses
                 while len(chunk) < 1024:
                     chunk += "+"
-                    
+
                 socket.send(chunk.encode('utf-8'))
 
               
